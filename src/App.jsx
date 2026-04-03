@@ -159,7 +159,7 @@ export default function App() {
     <main className="min-h-screen px-4 py-10 md:px-8">
       <div className="mx-auto w-full max-w-7xl space-y-4">
         <div className="text-center">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Learn Password</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Secure Password</p>
           <h1 className="mt-2 text-3xl font-bold md:text-4xl">Generator + Learning Studio</h1>
           <p className="mt-2 text-base-content/70">
             Two separate sides: generate a password from language wordlists, then practice it.

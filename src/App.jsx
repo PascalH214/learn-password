@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import GeneratorPanel from "./components/GeneratorPanel";
 import LearningPanel from "./components/LearningPanel";
 import SharingPanel from "./components/SharingPanel";
@@ -12,6 +12,12 @@ import {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("generator");
+  const [isOnline, setIsOnline] = useState(() => {
+    if (typeof navigator === "undefined") {
+      return true;
+    }
+    return navigator.onLine;
+  });
   const [selectedLanguages, setSelectedLanguages] = useState(DEFAULT_LANGUAGE_SELECTION);
   const [wordCount, setWordCount] = useState(4);
   const [minCharsPerWord, setMinCharsPerWord] = useState(1);
@@ -32,6 +38,19 @@ export default function App() {
   const [showPassword, setShowPassword] = useState(false);
   const [showLearn, setShowLearn] = useState(false);
   const [copyMessage, setCopyMessage] = useState("");
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   const selectedLanguageIds = AVAILABLE_LANGUAGES.filter((language) => selectedLanguages[language.id]).map(
     (language) => language.id
@@ -167,6 +186,15 @@ export default function App() {
             Generate passwords, practice learning them, or split them securely with Shamir's Secret Sharing.
           </p>
         </div>
+
+        <div className={`alert ${isOnline ? "alert-success" : "alert-error"} py-2`}>
+          <span>{isOnline ? "Internet status: Online" : "Internet status: Offline"}</span>
+        </div>
+
+        <p className="text-sm text-base-content/70">
+          For extra privacy, you can disconnect from the internet and continue using this site offline
+          to be sure no information leaves your device.
+        </p>
 
         {/* Tab Navigation */}
         <div className="tabs tabs-lifted flex justify-center gap-1 border-b-2 border-base-300/40">

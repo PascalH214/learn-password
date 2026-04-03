@@ -13,8 +13,8 @@ export default function SharingPanel() {
   const [showSplitShares, setShowSplitShares] = useState({});
 
   // Combine mode state
-  const [combineInputCount, setCombineInputCount] = useState(5);
-  const [shareInputs, setShareInputs] = useState(Array(5).fill(""));
+  const [combineInputCount, setCombineInputCount] = useState(3);
+  const [shareInputs, setShareInputs] = useState(Array(3).fill(""));
   const [combinedPassword, setCombinedPassword] = useState("");
   const [combineError, setCombineError] = useState("");
   const [combineMessage, setCombineMessage] = useState("Paste shares to reconstruct the password.");
@@ -214,21 +214,23 @@ export default function SharingPanel() {
                 <div className="divider my-2">Generated Shares</div>
                 <div className="space-y-2">
                   {splitResult.shares.map((share, index) => (
-                    <div key={index} className="flex items-center gap-2">
+                    <div key={index} className="join w-full">
                       <input
-                        className="input input-bordered flex-1 font-mono text-xs"
+                        className="input input-bordered join-item w-full font-mono text-xs"
                         type={showSplitShares[index] ? "text" : "password"}
                         value={share}
                         readOnly
                       />
                       <button
-                        className="btn btn-sm btn-outline"
+                        className="btn btn-outline join-item"
+                        type="button"
                         onClick={() => setShowSplitShares((state) => ({ ...state, [index]: !state[index] }))}
                       >
                         {showSplitShares[index] ? "Hide" : "Show"}
                       </button>
                       <button
-                        className="btn btn-sm btn-outline"
+                        className="btn btn-outline join-item"
+                        type="button"
                         onClick={() => copyToClipboard(share, setSplitMessage)}
                       >
                         Copy
@@ -272,21 +274,24 @@ export default function SharingPanel() {
             <div className="space-y-2">
               <label className="label-text mb-2 block">Paste your shares (paste at least threshold shares)</label>
               {shareInputs.map((share, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <span className="w-8 text-sm text-base-content/60">#{index + 1}</span>
-                  <input
-                    className="input input-bordered flex-1 font-mono text-sm"
-                    type={showCombineShares[index] ? "text" : "password"}
-                    value={share}
-                    onChange={(event) => handleShareChange(index, event.target.value)}
-                    placeholder={`Share ${index + 1}`}
-                  />
-                  <button
-                    className="btn btn-sm btn-outline"
-                    onClick={() => setShowCombineShares((state) => ({ ...state, [index]: !state[index] }))}
-                  >
-                    {showCombineShares[index] ? "Hide" : "Show"}
-                  </button>
+                <div key={index} className="form-control">
+                  <span className="label-text mb-1">Share #{index + 1}</span>
+                  <div className="join">
+                    <input
+                      className="input input-bordered join-item w-full font-mono text-sm"
+                      type={showCombineShares[index] ? "text" : "password"}
+                      value={share}
+                      onChange={(event) => handleShareChange(index, event.target.value)}
+                      placeholder={`Share ${index + 1}`}
+                    />
+                    <button
+                      className="btn btn-outline join-item"
+                      type="button"
+                      onClick={() => setShowCombineShares((state) => ({ ...state, [index]: !state[index] }))}
+                    >
+                      {showCombineShares[index] ? "Hide" : "Show"}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -303,21 +308,23 @@ export default function SharingPanel() {
           {combinedPassword && (
               <div className="space-y-2">
                 <div className="divider my-2">Reconstructed Password</div>
-                <div className="flex items-center gap-2">
+                <div className="join w-full">
                   <input
-                    className="input input-bordered flex-1 font-semibold"
+                    className="input input-bordered join-item w-full font-semibold"
                     type={showCombinedPassword ? "text" : "password"}
                     value={combinedPassword}
                     readOnly
                   />
                   <button
-                    className="btn btn-sm btn-outline"
+                    className="btn btn-outline join-item"
+                    type="button"
                     onClick={() => setShowCombinedPassword((state) => !state)}
                   >
                     {showCombinedPassword ? "Hide" : "Show"}
                   </button>
                   <button
-                    className="btn btn-sm btn-outline"
+                    className="btn btn-outline join-item"
+                    type="button"
                     onClick={() => copyToClipboard(combinedPassword, setCombineMessage)}
                   >
                     Copy

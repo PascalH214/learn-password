@@ -1,21 +1,56 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
+import { scorePassword } from "../utils/passwordGenerator";
 
 export default function LearningPanel({
   password,
   setPassword,
-  learnPassword,
-  setLearnPassword,
-  showPassword,
-  setShowPassword,
-  showLearn,
-  setShowLearn,
-  copyMessage,
-  setCopyMessage,
-  matchState,
-  strength,
-  copyPassword,
-  resetLearning
+  useLearningForEncryption
 }) {
+  const [learnPassword, setLearnPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showLearn, setShowLearn] = useState(false);
+  const [copyMessage, setCopyMessage] = useState("");
+
+  const strength = useMemo(() => scorePassword(password), [password]);
+
+  const matchState = useMemo(() => {
+    if (!password && !learnPassword) {
+      return { text: "Waiting for input…", className: "text-base-content/60" };
+    }
+
+    if (!learnPassword) {
+      return { text: "Retype the password in the learning field.", className: "text-warning" };
+    }
+
+    if (password === learnPassword) {
+      return { text: "Perfect match! You learned it.", className: "text-success" };
+    }
+
+    return { text: "Not matching yet — keep trying.", className: "text-error" };
+  }, [password, learnPassword]);
+
+  const copyPassword = async () => {
+    if (!password) {
+      setCopyMessage("Add a password first to copy it.");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(password);
+      setCopyMessage("Password copied to clipboard.");
+    } catch {
+      setCopyMessage("Clipboard unavailable in this browser context.");
+    }
+  };
+
+  const resetLearning = () => {
+    setPassword("");
+    setLearnPassword("");
+    setCopyMessage("");
+    setShowPassword(false);
+    setShowLearn(false);
+  };
+
   return (
     <section className="card border border-base-300/40 bg-base-200/70 shadow-2xl backdrop-blur">
       <div className="card-body">

@@ -1,8 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { splitPassword, combineShares, isValidShare } from "../utils/shamir";
 import { exportSharesPdf } from "../utils/sharePdf";
 
-export default function SharingPanel() {
+export default function SharingPanel({
+  sharingPanelPassword = "",
+  setSharingPanelPassword = null,
+  onUseForEncryption = null
+}) {
   // Split mode state
   const [splitInput, setSplitInput] = useState("");
   const [totalShares, setTotalShares] = useState(5);
@@ -24,6 +28,20 @@ export default function SharingPanel() {
   const [combineMessage, setCombineMessage] = useState("Paste shares to reconstruct the password.");
   const [showCombineShares, setShowCombineShares] = useState({});
   const [showCombinedPassword, setShowCombinedPassword] = useState(false);
+
+  useEffect(() => {
+    if (!sharingPanelPassword) {
+      return;
+    }
+
+    setSplitInput(sharingPanelPassword);
+    setSplitError("");
+    setSplitMessage("Password received. Ready to split.");
+
+    if (setSharingPanelPassword) {
+      setSharingPanelPassword("");
+    }
+  }, [sharingPanelPassword, setSharingPanelPassword]);
 
   // Copy to clipboard with feedback
   const copyToClipboard = (text, feedbackSetter) => {
@@ -357,6 +375,14 @@ export default function SharingPanel() {
             <div className="card-actions flex-wrap justify-start gap-2">
               <button className="btn btn-primary" onClick={handleCombineShares}>
                 Combine Shares
+              </button>
+              <button
+                className="btn btn-outline"
+                type="button"
+                onClick={() => onUseForEncryption && onUseForEncryption(combinedPassword)}
+                disabled={!combinedPassword}
+              >
+                Use for encryption
               </button>
               <button className="btn btn-ghost" onClick={handleResetCombine}>
                 Reset

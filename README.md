@@ -10,7 +10,7 @@ It was made with AI because of a lack of time and because I wanted to learn a ne
 
 A modern single-page React app with two separate sides:
 
-- **Password Generator side**: dynamically loads words from `words/wordlist-*.txt` and supports language selection
+- **Password Generator side**: dynamically loads words from `words/*.txt` and supports language selection
 - **Learning side**: lets you enter/retype the password and practice with live feedback
 
 Tech stack:
@@ -58,4 +58,3 @@ npm run preview
 
 - [ ] Save hashed password in database so that it has to be entered only one time.
 - [ ] Add spaced-repetition notifications to learn the password regularly (e.g., 1 hour, 2 hours, 4 hours, 8 hours, etc.).
-- [ ] If password is learned, it should be possible to apply Shamir's Secret Sharing.

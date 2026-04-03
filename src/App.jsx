@@ -1,14 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import GeneratorPanel from "./components/GeneratorPanel";
 import LearningPanel from "./components/LearningPanel";
 import SharingPanel from "./components/SharingPanel";
-import {
-  AVAILABLE_LANGUAGES,
-  DEFAULT_LANGUAGE_SELECTION,
-  buildWordPassword,
-  loadSelectedWords,
-  scorePassword
-} from "./utils/passwordGenerator";
+import EncryptionPanel from "./components/EncryptionPanel";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("generator");
@@ -18,26 +12,9 @@ export default function App() {
     }
     return navigator.onLine;
   });
-  const [selectedLanguages, setSelectedLanguages] = useState(DEFAULT_LANGUAGE_SELECTION);
-  const [wordCount, setWordCount] = useState(4);
-  const [minCharsPerWord, setMinCharsPerWord] = useState(1);
-  const [maxCharsPerWord, setMaxCharsPerWord] = useState(12);
-  const [separator, setSeparator] = useState("-");
-  const [capitalizeWords, setCapitalizeWords] = useState(true);
-  const [addNumber, setAddNumber] = useState(true);
-  const [addSymbol, setAddSymbol] = useState(true);
-  const [generatedPassword, setGeneratedPassword] = useState("");
-  const [showGeneratedPassword, setShowGeneratedPassword] = useState(false);
-  const [generatorMessage, setGeneratorMessage] = useState(
-    "Select languages and generate a password from words."
-  );
-  const [isGenerating, setIsGenerating] = useState(false);
-
   const [password, setPassword] = useState("");
-  const [learnPassword, setLearnPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showLearn, setShowLearn] = useState(false);
-  const [copyMessage, setCopyMessage] = useState("");
+  const [sharingPanelPassword, setSharingPanelPassword] = useState("");
+  const [passwordForEncryption, setPasswordForEncryption] = useState("");
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -52,128 +29,29 @@ export default function App() {
     };
   }, []);
 
-  const selectedLanguageIds = AVAILABLE_LANGUAGES.filter((language) => selectedLanguages[language.id]).map(
-    (language) => language.id
-  );
-
-  const selectedLanguageSummary = selectedLanguageIds.length
-    ? AVAILABLE_LANGUAGES.filter((language) => selectedLanguageIds.includes(language.id))
-        .map((language) => language.label)
-        .join(", ")
-    : "No languages selected";
-
-  const strength = useMemo(() => scorePassword(password), [password]);
-
-  const matchState = useMemo(() => {
-    if (!password && !learnPassword) {
-      return { text: "Waiting for input…", className: "text-base-content/60" };
-    }
-
-    if (!learnPassword) {
-      return { text: "Retype the password in the learning field.", className: "text-warning" };
-    }
-
-    if (password === learnPassword) {
-      return { text: "Perfect match! You learned it.", className: "text-success" };
-    }
-
-    return { text: "Not matching yet — keep trying.", className: "text-error" };
-  }, [password, learnPassword]);
-
-  const toggleLanguage = (languageId) => {
-    setSelectedLanguages((current) => ({
-      ...current,
-      [languageId]: !current[languageId]
-    }));
+  const useGeneratedForLearning = (value) => {
+    setPassword(value);
   };
 
-  const generatePassword = async () => {
-    if (selectedLanguageIds.length === 0) {
-      setGeneratorMessage("Choose at least one language first.");
+  const useGeneratedForEncryption = (value) => {
+    setPasswordForEncryption(value);
+    setActiveTab("encryption");
+  };
+
+  const useGeneratedForSecretSharing = (value) => {
+    setSharingPanelPassword(value);
+    setActiveTab("sharing");
+  };
+
+  const useLearningForEncryption = (value, setCopyMessage) => {
+    if (!value) {
+      setCopyMessage("Enter a password first.");
       return;
     }
 
-    setIsGenerating(true);
-    setGeneratorMessage("Loading selected word lists…");
-
-    try {
-      const words = await loadSelectedWords(selectedLanguageIds);
-      const effectiveMinChars = Math.min(minCharsPerWord, maxCharsPerWord);
-      const effectiveMaxChars = Math.max(minCharsPerWord, maxCharsPerWord);
-      const filteredWords = words.filter(
-        (word) => word.length >= effectiveMinChars && word.length <= effectiveMaxChars
-      );
-
-      if (filteredWords.length === 0) {
-        throw new Error(
-          `No words found in range ${effectiveMinChars}-${effectiveMaxChars} characters.`
-        );
-      }
-
-      const nextPassword = buildWordPassword({
-        words: filteredWords,
-        wordCount,
-        separator,
-        capitalizeWords,
-        addNumber,
-        addSymbol
-      });
-
-      setGeneratedPassword(nextPassword);
-      setGeneratorMessage(`Generated from ${selectedLanguageSummary}.`);
-      setCopyMessage("");
-    } catch (error) {
-      setGeneratorMessage(error instanceof Error ? error.message : "Could not generate password.");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const useGeneratedPassword = () => {
-    if (!generatedPassword) {
-      setGeneratorMessage("Generate a password first.");
-      return;
-    }
-
-    setPassword(generatedPassword);
-    setLearnPassword("");
-    setCopyMessage("");
-  };
-
-  const copyGeneratedPassword = async () => {
-    if (!generatedPassword) {
-      setGeneratorMessage("Generate a password first.");
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(generatedPassword);
-      setGeneratorMessage("Generated password copied to clipboard.");
-    } catch {
-      setGeneratorMessage("Clipboard unavailable in this browser context.");
-    }
-  };
-
-  const copyPassword = async () => {
-    if (!password) {
-      setCopyMessage("Add a password first to copy it.");
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(password);
-      setCopyMessage("Password copied to clipboard.");
-    } catch {
-      setCopyMessage("Clipboard unavailable in this browser context.");
-    }
-  };
-
-  const resetLearning = () => {
-    setPassword("");
-    setLearnPassword("");
-    setCopyMessage("");
-    setShowPassword(false);
-    setShowLearn(false);
+    setPasswordForEncryption(value);
+    setCopyMessage("Using current learning password for encryption.");
+    setActiveTab("encryption");
   };
 
   return (
@@ -209,64 +87,51 @@ export default function App() {
           >
             Secret Sharing
           </button>
+          <button
+            className={`tab ${activeTab === "encryption" ? "tab-active" : ""}`}
+            onClick={() => setActiveTab("encryption")}
+          >
+            Encryption
+          </button>
         </div>
 
-        {/* Generator Tab */}
-        {activeTab === "generator" && (
+        <div className={activeTab === "generator" ? "block" : "hidden"}>
           <div className="grid gap-5 lg:grid-cols-2">
             <GeneratorPanel
-              generatorMessage={generatorMessage}
-              generatedPassword={generatedPassword}
-              setGeneratedPassword={setGeneratedPassword}
-              showGeneratedPassword={showGeneratedPassword}
-              setShowGeneratedPassword={setShowGeneratedPassword}
-              setGeneratorMessage={setGeneratorMessage}
-              wordCount={wordCount}
-              setWordCount={setWordCount}
-              minCharsPerWord={minCharsPerWord}
-              setMinCharsPerWord={setMinCharsPerWord}
-              maxCharsPerWord={maxCharsPerWord}
-              setMaxCharsPerWord={setMaxCharsPerWord}
-              separator={separator}
-              setSeparator={setSeparator}
-              capitalizeWords={capitalizeWords}
-              setCapitalizeWords={setCapitalizeWords}
-              addNumber={addNumber}
-              setAddNumber={setAddNumber}
-              addSymbol={addSymbol}
-              setAddSymbol={setAddSymbol}
-              selectedLanguages={selectedLanguages}
-              toggleLanguage={toggleLanguage}
-              selectedLanguageSummary={selectedLanguageSummary}
-              isGenerating={isGenerating}
-              generatePassword={generatePassword}
-              copyGeneratedPassword={copyGeneratedPassword}
-              useGeneratedPassword={useGeneratedPassword}
+              onUseForLearning={useGeneratedForLearning}
+              onUseForEncryption={useGeneratedForEncryption}
+              onUseForSecretSharing={useGeneratedForSecretSharing}
             />
 
             <LearningPanel
               password={password}
               setPassword={setPassword}
-              learnPassword={learnPassword}
-              setLearnPassword={setLearnPassword}
-              showPassword={showPassword}
-              setShowPassword={setShowPassword}
-              showLearn={showLearn}
-              setShowLearn={setShowLearn}
-              copyMessage={copyMessage}
-              setCopyMessage={setCopyMessage}
-              matchState={matchState}
-              strength={strength}
-              copyPassword={copyPassword}
-              resetLearning={resetLearning}
+              useLearningForEncryption={useLearningForEncryption}
             />
           </div>
-        )}
+        </div>
 
-        {/* Sharing Tab */}
-        {activeTab === "sharing" && (
-          <SharingPanel />
-        )}
+        <div className={activeTab === "sharing" ? "block" : "hidden"}>
+          <SharingPanel
+            sharingPanelPassword={sharingPanelPassword}
+            setSharingPanelPassword={setSharingPanelPassword}
+            onUseForEncryption={(value) => {
+              setPasswordForEncryption(value);
+              setActiveTab("encryption");
+            }}
+          />
+        </div>
+
+        <div className={activeTab === "encryption" ? "block" : "hidden"}>
+          <div className="grid gap-5">
+            <EncryptionPanel
+              setPassword={setPassword}
+              onDecrypted={setSharingPanelPassword}
+              passwordForEncryption={passwordForEncryption}
+              setPasswordForEncryption={setPasswordForEncryption}
+            />
+          </div>
+        </div>
       </div>
     </main>
   );

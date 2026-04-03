@@ -1,60 +1,136 @@
 import React, { useMemo, useState } from "react";
-
-function scorePassword(value) {
-  if (!value) {
-    return { score: 0, label: "—", colorClass: "bad" };
-  }
-
-  let score = Math.min(20, value.length * 3);
-  if (/[a-z]/.test(value)) score += 15;
-  if (/[A-Z]/.test(value)) score += 15;
-  if (/\d/.test(value)) score += 15;
-  if (/[^A-Za-z0-9]/.test(value)) score += 20;
-  if (value.length >= 12) score += 15;
-  score = Math.min(score, 100);
-
-  if (score < 40) return { score, label: "Weak", colorClass: "bad" };
-  if (score < 70) return { score, label: "Medium", colorClass: "warn" };
-  return { score, label: "Strong", colorClass: "good" };
-}
+import GeneratorPanel from "./components/GeneratorPanel";
+import LearningPanel from "./components/LearningPanel";
+import {
+  AVAILABLE_LANGUAGES,
+  DEFAULT_LANGUAGE_SELECTION,
+  buildWordPassword,
+  loadSelectedWords,
+  scorePassword
+} from "./utils/passwordGenerator";
 
 export default function App() {
+  const [selectedLanguages, setSelectedLanguages] = useState(DEFAULT_LANGUAGE_SELECTION);
+  const [wordCount, setWordCount] = useState(4);
+  const [minCharsPerWord, setMinCharsPerWord] = useState(1);
+  const [maxCharsPerWord, setMaxCharsPerWord] = useState(12);
+  const [separator, setSeparator] = useState("-");
+  const [capitalizeWords, setCapitalizeWords] = useState(true);
+  const [addNumber, setAddNumber] = useState(true);
+  const [addSymbol, setAddSymbol] = useState(true);
+  const [generatedPassword, setGeneratedPassword] = useState("");
+  const [showGeneratedPassword, setShowGeneratedPassword] = useState(false);
+  const [generatorMessage, setGeneratorMessage] = useState(
+    "Select languages and generate a password from words."
+  );
+  const [isGenerating, setIsGenerating] = useState(false);
+
   const [password, setPassword] = useState("");
   const [learnPassword, setLearnPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showLearn, setShowLearn] = useState(false);
   const [copyMessage, setCopyMessage] = useState("");
 
+  const selectedLanguageIds = AVAILABLE_LANGUAGES.filter((language) => selectedLanguages[language.id]).map(
+    (language) => language.id
+  );
+
+  const selectedLanguageSummary = selectedLanguageIds.length
+    ? AVAILABLE_LANGUAGES.filter((language) => selectedLanguageIds.includes(language.id))
+        .map((language) => language.label)
+        .join(", ")
+    : "No languages selected";
+
   const strength = useMemo(() => scorePassword(password), [password]);
 
   const matchState = useMemo(() => {
     if (!password && !learnPassword) {
-      return { text: "Waiting for input…", className: "" };
+      return { text: "Waiting for input…", className: "text-base-content/60" };
     }
 
     if (!learnPassword) {
-      return {
-        text: "Retype the password in the learning field.",
-        className: "warn"
-      };
+      return { text: "Retype the password in the learning field.", className: "text-warning" };
     }
 
     if (password === learnPassword) {
-      return { text: "Perfect match! You learned it.", className: "ok" };
+      return { text: "Perfect match! You learned it.", className: "text-success" };
     }
 
-    return { text: "Not matching yet — keep trying.", className: "bad" };
+    return { text: "Not matching yet — keep trying.", className: "text-error" };
   }, [password, learnPassword]);
 
-  const message = copyMessage || matchState.text;
-  const messageClass = copyMessage ? "ok" : matchState.className;
+  const toggleLanguage = (languageId) => {
+    setSelectedLanguages((current) => ({
+      ...current,
+      [languageId]: !current[languageId]
+    }));
+  };
 
-  const resetForm = () => {
-    setPassword("");
+  const generatePassword = async () => {
+    if (selectedLanguageIds.length === 0) {
+      setGeneratorMessage("Choose at least one language first.");
+      return;
+    }
+
+    setIsGenerating(true);
+    setGeneratorMessage("Loading selected word lists…");
+
+    try {
+      const words = await loadSelectedWords(selectedLanguageIds);
+      const effectiveMinChars = Math.min(minCharsPerWord, maxCharsPerWord);
+      const effectiveMaxChars = Math.max(minCharsPerWord, maxCharsPerWord);
+      const filteredWords = words.filter(
+        (word) => word.length >= effectiveMinChars && word.length <= effectiveMaxChars
+      );
+
+      if (filteredWords.length === 0) {
+        throw new Error(
+          `No words found in range ${effectiveMinChars}-${effectiveMaxChars} characters.`
+        );
+      }
+
+      const nextPassword = buildWordPassword({
+        words: filteredWords,
+        wordCount,
+        separator,
+        capitalizeWords,
+        addNumber,
+        addSymbol
+      });
+
+      setGeneratedPassword(nextPassword);
+      setGeneratorMessage(`Generated from ${selectedLanguageSummary}.`);
+      setCopyMessage("");
+    } catch (error) {
+      setGeneratorMessage(error instanceof Error ? error.message : "Could not generate password.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const useGeneratedPassword = () => {
+    if (!generatedPassword) {
+      setGeneratorMessage("Generate a password first.");
+      return;
+    }
+
+    setPassword(generatedPassword);
     setLearnPassword("");
-    setShowPassword(false);
-    setShowLearn(false);
     setCopyMessage("");
+  };
+
+  const copyGeneratedPassword = async () => {
+    if (!generatedPassword) {
+      setGeneratorMessage("Generate a password first.");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(generatedPassword);
+      setGeneratorMessage("Generated password copied to clipboard.");
+    } catch {
+      setGeneratorMessage("Clipboard unavailable in this browser context.");
+    }
   };
 
   const copyPassword = async () => {
@@ -69,105 +145,76 @@ export default function App() {
     } catch {
       setCopyMessage("Clipboard unavailable in this browser context.");
     }
+  };
 
-    window.setTimeout(() => setCopyMessage(""), 1800);
+  const resetLearning = () => {
+    setPassword("");
+    setLearnPassword("");
+    setCopyMessage("");
+    setShowPassword(false);
+    setShowLearn(false);
   };
 
   return (
-    <main className="app">
-      <section className="card" aria-labelledby="title">
-        <p className="eyebrow">Secure Practice</p>
-        <h1 id="title">Password Learning Studio</h1>
-        <p className="subtitle">
-          Type your password once, then retype it in the learning field until both
-          values match perfectly.
-        </p>
+    <main className="min-h-screen px-4 py-10 md:px-8">
+      <div className="mx-auto w-full max-w-7xl space-y-4">
+        <div className="text-center">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Learn Password</p>
+          <h1 className="mt-2 text-3xl font-bold md:text-4xl">Generator + Learning Studio</h1>
+          <p className="mt-2 text-base-content/70">
+            Two separate sides: generate a password from language wordlists, then practice it.
+          </p>
+        </div>
 
-        <form
-          onSubmit={(event) => event.preventDefault()}
-          onReset={resetForm}
-          noValidate
-        >
-          <div className="field-group">
-            <label htmlFor="passwordInput">Enter password</label>
-            <div className="input-wrap">
-              <input
-                id="passwordInput"
-                type={showPassword ? "text" : "password"}
-                autoComplete="new-password"
-                placeholder="Enter password"
-                value={password}
-                onChange={(event) => {
-                  setPassword(event.target.value);
-                  setCopyMessage("");
-                }}
-                aria-describedby="strengthText"
-                required
-              />
-              <button
-                type="button"
-                className="ghost"
-                onClick={() => setShowPassword((state) => !state)}
-              >
-                {showPassword ? "Hide" : "Show"}
-              </button>
-            </div>
-            <div className="strength-row" aria-live="polite">
-              <div
-                className="strength-track"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={strength.score}
-              >
-                <span
-                  className={`strength-bar ${strength.colorClass}`}
-                  style={{ width: `${strength.score}%` }}
-                />
-              </div>
-              <span id="strengthText">Strength: {strength.label}</span>
-            </div>
-          </div>
+        <div className="grid gap-5 lg:grid-cols-2">
+          <GeneratorPanel
+            generatorMessage={generatorMessage}
+            generatedPassword={generatedPassword}
+            setGeneratedPassword={setGeneratedPassword}
+            showGeneratedPassword={showGeneratedPassword}
+            setShowGeneratedPassword={setShowGeneratedPassword}
+            setGeneratorMessage={setGeneratorMessage}
+            wordCount={wordCount}
+            setWordCount={setWordCount}
+            minCharsPerWord={minCharsPerWord}
+            setMinCharsPerWord={setMinCharsPerWord}
+            maxCharsPerWord={maxCharsPerWord}
+            setMaxCharsPerWord={setMaxCharsPerWord}
+            separator={separator}
+            setSeparator={setSeparator}
+            capitalizeWords={capitalizeWords}
+            setCapitalizeWords={setCapitalizeWords}
+            addNumber={addNumber}
+            setAddNumber={setAddNumber}
+            addSymbol={addSymbol}
+            setAddSymbol={setAddSymbol}
+            selectedLanguages={selectedLanguages}
+            toggleLanguage={toggleLanguage}
+            selectedLanguageSummary={selectedLanguageSummary}
+            isGenerating={isGenerating}
+            generatePassword={generatePassword}
+            copyGeneratedPassword={copyGeneratedPassword}
+            useGeneratedPassword={useGeneratedPassword}
+          />
 
-          <div className="field-group">
-            <label htmlFor="learnInput">Learn password (retype)</label>
-            <div className="input-wrap">
-              <input
-                id="learnInput"
-                type={showLearn ? "text" : "password"}
-                autoComplete="off"
-                placeholder="Retype password to learn it"
-                value={learnPassword}
-                onChange={(event) => {
-                  setLearnPassword(event.target.value);
-                  setCopyMessage("");
-                }}
-                aria-describedby="matchText"
-                required
-              />
-              <button
-                type="button"
-                className="ghost"
-                onClick={() => setShowLearn((state) => !state)}
-              >
-                {showLearn ? "Hide" : "Show"}
-              </button>
-            </div>
-            <p id="matchText" className={`hint ${messageClass}`} aria-live="polite">
-              {message}
-            </p>
-          </div>
-
-          <div className="actions">
-            <button type="button" onClick={copyPassword} className="btn secondary">
-              Copy password
-            </button>
-            <button type="reset" className="btn primary">
-              Reset
-            </button>
-          </div>
-        </form>
-      </section>
+          <LearningPanel
+            password={password}
+            setPassword={setPassword}
+            learnPassword={learnPassword}
+            setLearnPassword={setLearnPassword}
+            showPassword={showPassword}
+            setShowPassword={setShowPassword}
+            showLearn={showLearn}
+            setShowLearn={setShowLearn}
+            copyMessage={copyMessage}
+            setCopyMessage={setCopyMessage}
+            matchState={matchState}
+            strength={strength}
+            copyPassword={copyPassword}
+            resetLearning={resetLearning}
+          />
+        </div>
+      </div>
     </main>
   );
 }

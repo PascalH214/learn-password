@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: Inter, system-ui, sans-serif;
+}
+
+body {
+  @apply min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-base-content;
+}
+
+#root {
+  @apply min-h-screen;
+}

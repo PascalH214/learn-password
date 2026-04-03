@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { splitPassword, combineShares, isValidShare } from "../utils/shamir";
+import { exportSharesPdf } from "../utils/sharePdf";
 
 export default function SharingPanel() {
   // Split mode state
@@ -11,6 +12,9 @@ export default function SharingPanel() {
   const [splitMessage, setSplitMessage] = useState("Enter a password to split into shares.");
   const [showSplitInput, setShowSplitInput] = useState(false);
   const [showSplitShares, setShowSplitShares] = useState({});
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [includePdfMeta, setIncludePdfMeta] = useState(false);
+  const [pdfBlockTitle, setPdfBlockTitle] = useState("");
 
   // Combine mode state
   const [combineInputCount, setCombineInputCount] = useState(3);
@@ -117,6 +121,31 @@ export default function SharingPanel() {
     setSplitMessage("Enter a password to split into shares.");
   };
 
+  const handleExportSharesPdf = async () => {
+    if (!splitResult?.shares?.length) {
+      setSplitError("Generate shares first, then export the PDF.");
+      return;
+    }
+
+    setSplitError("");
+    setIsExportingPdf(true);
+
+    try {
+      await exportSharesPdf({
+        shares: splitResult.shares,
+        threshold: splitResult.threshold,
+        totalShares: splitResult.totalShares,
+        includeMeta: includePdfMeta,
+        blockTitle: pdfBlockTitle,
+      });
+      setSplitMessage("PDF exported successfully.");
+    } catch (error) {
+      setSplitError(error instanceof Error ? error.message : "Failed to export PDF.");
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
   // Reset combine mode
   const handleResetCombine = () => {
     setShareInputs(Array(combineInputCount).fill(""));
@@ -204,10 +233,39 @@ export default function SharingPanel() {
               <button className="btn btn-primary" onClick={handleSplitPassword}>
                 Split Password
               </button>
+              <button
+                className="btn btn-outline"
+                type="button"
+                onClick={handleExportSharesPdf}
+                disabled={!splitResult || isExportingPdf}
+              >
+                {isExportingPdf ? "Exporting PDF…" : "Export PDF"}
+              </button>
               <button className="btn btn-ghost" onClick={handleResetSplit}>
                 Reset
               </button>
             </div>
+
+            <label className="label cursor-pointer justify-start gap-2 rounded-lg border border-base-300 px-3 py-2">
+              <input
+                type="checkbox"
+                className="checkbox checkbox-primary checkbox-sm"
+                checked={includePdfMeta}
+                onChange={(event) => setIncludePdfMeta(event.target.checked)}
+              />
+              <span className="label-text">Include total and threshold in PDF blocks</span>
+            </label>
+
+            <label className="form-control">
+              <span className="label-text mb-1">Block title (optional)</span>
+              <input
+                className="input input-bordered"
+                type="text"
+                value={pdfBlockTitle}
+                onChange={(event) => setPdfBlockTitle(event.target.value)}
+                placeholder="Example: Name, Birthday, Recovery Set A"
+              />
+            </label>
 
           {splitResult && (
               <div className="space-y-2">

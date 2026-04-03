@@ -20,7 +20,7 @@ export default function LearningPanel({
     <section className="card border border-base-300/40 bg-base-200/70 shadow-2xl backdrop-blur">
       <div className="card-body">
         <div className="mb-2 flex items-center justify-between gap-3">
-          <h2 className="card-title">Learning Side</h2>
+          <h2 className="card-title">Learning</h2>
           <span className="badge badge-secondary badge-outline">Practice</span>
         </div>
 

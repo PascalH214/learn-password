@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import GeneratorPanel from "./components/GeneratorPanel";
 import LearningPanel from "./components/LearningPanel";
+import SharingPanel from "./components/SharingPanel";
 import {
   AVAILABLE_LANGUAGES,
   DEFAULT_LANGUAGE_SELECTION,
@@ -10,6 +11,7 @@ import {
 } from "./utils/passwordGenerator";
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState("generator");
   const [selectedLanguages, setSelectedLanguages] = useState(DEFAULT_LANGUAGE_SELECTION);
   const [wordCount, setWordCount] = useState(4);
   const [minCharsPerWord, setMinCharsPerWord] = useState(1);
@@ -162,58 +164,82 @@ export default function App() {
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Secure Password</p>
           <h1 className="mt-2 text-3xl font-bold md:text-4xl">Generator + Learning Studio</h1>
           <p className="mt-2 text-base-content/70">
-            Two separate sides: generate a password from language wordlists, then practice it.
+            Generate passwords, practice learning them, or split them securely with Shamir's Secret Sharing.
           </p>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-2">
-          <GeneratorPanel
-            generatorMessage={generatorMessage}
-            generatedPassword={generatedPassword}
-            setGeneratedPassword={setGeneratedPassword}
-            showGeneratedPassword={showGeneratedPassword}
-            setShowGeneratedPassword={setShowGeneratedPassword}
-            setGeneratorMessage={setGeneratorMessage}
-            wordCount={wordCount}
-            setWordCount={setWordCount}
-            minCharsPerWord={minCharsPerWord}
-            setMinCharsPerWord={setMinCharsPerWord}
-            maxCharsPerWord={maxCharsPerWord}
-            setMaxCharsPerWord={setMaxCharsPerWord}
-            separator={separator}
-            setSeparator={setSeparator}
-            capitalizeWords={capitalizeWords}
-            setCapitalizeWords={setCapitalizeWords}
-            addNumber={addNumber}
-            setAddNumber={setAddNumber}
-            addSymbol={addSymbol}
-            setAddSymbol={setAddSymbol}
-            selectedLanguages={selectedLanguages}
-            toggleLanguage={toggleLanguage}
-            selectedLanguageSummary={selectedLanguageSummary}
-            isGenerating={isGenerating}
-            generatePassword={generatePassword}
-            copyGeneratedPassword={copyGeneratedPassword}
-            useGeneratedPassword={useGeneratedPassword}
-          />
-
-          <LearningPanel
-            password={password}
-            setPassword={setPassword}
-            learnPassword={learnPassword}
-            setLearnPassword={setLearnPassword}
-            showPassword={showPassword}
-            setShowPassword={setShowPassword}
-            showLearn={showLearn}
-            setShowLearn={setShowLearn}
-            copyMessage={copyMessage}
-            setCopyMessage={setCopyMessage}
-            matchState={matchState}
-            strength={strength}
-            copyPassword={copyPassword}
-            resetLearning={resetLearning}
-          />
+        {/* Tab Navigation */}
+        <div className="tabs tabs-lifted flex justify-center gap-1 border-b-2 border-base-300/40">
+          <button
+            className={`tab ${activeTab === "generator" ? "tab-active" : ""}`}
+            onClick={() => setActiveTab("generator")}
+          >
+            Generator & Learning
+          </button>
+          <button
+            className={`tab ${activeTab === "sharing" ? "tab-active" : ""}`}
+            onClick={() => setActiveTab("sharing")}
+          >
+            Secret Sharing
+          </button>
         </div>
+
+        {/* Generator Tab */}
+        {activeTab === "generator" && (
+          <div className="grid gap-5 lg:grid-cols-2">
+            <GeneratorPanel
+              generatorMessage={generatorMessage}
+              generatedPassword={generatedPassword}
+              setGeneratedPassword={setGeneratedPassword}
+              showGeneratedPassword={showGeneratedPassword}
+              setShowGeneratedPassword={setShowGeneratedPassword}
+              setGeneratorMessage={setGeneratorMessage}
+              wordCount={wordCount}
+              setWordCount={setWordCount}
+              minCharsPerWord={minCharsPerWord}
+              setMinCharsPerWord={setMinCharsPerWord}
+              maxCharsPerWord={maxCharsPerWord}
+              setMaxCharsPerWord={setMaxCharsPerWord}
+              separator={separator}
+              setSeparator={setSeparator}
+              capitalizeWords={capitalizeWords}
+              setCapitalizeWords={setCapitalizeWords}
+              addNumber={addNumber}
+              setAddNumber={setAddNumber}
+              addSymbol={addSymbol}
+              setAddSymbol={setAddSymbol}
+              selectedLanguages={selectedLanguages}
+              toggleLanguage={toggleLanguage}
+              selectedLanguageSummary={selectedLanguageSummary}
+              isGenerating={isGenerating}
+              generatePassword={generatePassword}
+              copyGeneratedPassword={copyGeneratedPassword}
+              useGeneratedPassword={useGeneratedPassword}
+            />
+
+            <LearningPanel
+              password={password}
+              setPassword={setPassword}
+              learnPassword={learnPassword}
+              setLearnPassword={setLearnPassword}
+              showPassword={showPassword}
+              setShowPassword={setShowPassword}
+              showLearn={showLearn}
+              setShowLearn={setShowLearn}
+              copyMessage={copyMessage}
+              setCopyMessage={setCopyMessage}
+              matchState={matchState}
+              strength={strength}
+              copyPassword={copyPassword}
+              resetLearning={resetLearning}
+            />
+          </div>
+        )}
+
+        {/* Sharing Tab */}
+        {activeTab === "sharing" && (
+          <SharingPanel />
+        )}
       </div>
     </main>
   );

@@ -35,7 +35,7 @@ export default function GeneratorPanel({
       <div className="card-body">
         <div className="mb-2 flex items-center justify-between gap-3">
           <h2 className="card-title">Password Generator</h2>
-          <span className="badge badge-primary badge-outline">Dynamic lists</span>
+          <span className="badge badge-primary badge-outline">Generation</span>
         </div>
 
         <div className="alert alert-info py-2 text-sm">

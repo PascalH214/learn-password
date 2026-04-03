@@ -45,3 +45,9 @@ npm run preview
 - `src/App.jsx` – password learner UI logic
 - `src/styles.css` – app styling
 - `package.json` – scripts and dependencies
+
+## TODOs
+
+- [ ] Save hashed password in database so that it has to be entered only one time.
+- [ ] Add spaced-repetition notifications to learn the password regularly (e.g., 1 hour, 2 hours, 4 hours, 8 hours, etc.).
+- [ ] If password is learned, it should be possible to apply Shamir's Secret Sharing.
